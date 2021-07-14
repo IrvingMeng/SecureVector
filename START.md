@@ -6,6 +6,6 @@
 **install requirements.** install python requirements.
 > pip install -i https://mirror.baidu.com/pypi/simple -r requirements.txt
 
-**run an example.** below script show a procedure of enrollment, comparison.
+**run an example.** below script shows a procedure of enrollment, comparison.
 
 refer to `run/app.enrollment_crypto_comparison.sh`
