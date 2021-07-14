@@ -200,6 +200,55 @@ class EnrollmentFeature:
     
         return np.array(dist)
 
+    def pairs_distance(self, c_x_list, C_tilde_x_list, c_y_list, C_tilde_y_list,idxs_list):
+        idx_scores_map = {}
+        for i in range(len(idxs_list)):
+            idx = idxs_list[i]
+            c_x, C_tilde_x, c_y, C_tilde_y = c_x_list[i], C_tilde_x_list[i], c_y_list[i], C_tilde_y_list[i]
+            # generate bar_c_xy
+            c_xy = c_x*c_y
+            n = len(c_x)    
+            bar_c_xy = [sum(c_xy[i:i+n//self.K]) for i in range(0, n, n//self.K)]
+
+            # decrypt 
+            C_z = decrypt_sum(C_tilde_x, C_tilde_y, self.private_key)
+
+            # recover u_list, v_list, w
+            u_list, v_list, w_z = decode_uvw(C_z, self.K, self.L)
+            s_list = [1 if v%2==0 else -1 for v in v_list]
+
+            # calculate the score
+            W_z = np.e**((w_z - 2**15 * self.L**8)/(2**14 * self.L**7*self.M))
+            score = W_z * sum([bar_c_xy[i]/(s_list[i] * np.e**((u_list[i]-2*self.L)/self.M)) for i in range(self.K)])
+
+            idx_scores_map[idx] = np.arccos(score) / math.pi
+        
+        return idx_scores_map
+
+
+    def distance_parallel(self, c_x_list, C_tilde_x_list, c_y_list, C_tilde_y_list, num_jobs=80):
+        score_list = []
+        lnum = len(c_x_list)
+        idxs = list(range(0,lnum, math.ceil(lnum/num_jobs)))
+        idxs.append(lnum)
+        result_list = Parallel(n_jobs=num_jobs, verbose=100)(delayed(self.pairs_distance)(
+            c_x_list[idxs[i]:idxs[i+1]], 
+            C_tilde_x_list[idxs[i]:idxs[i+1]], 
+            c_y_list[idxs[i]:idxs[i+1]], 
+            C_tilde_y_list[idxs[i]:idxs[i+1]], 
+            list(range(idxs[i], idxs[i+1]))
+            ) for i in range(num_jobs))
+
+        all_idx_scores_map = {}
+        for idx_scores_map in result_list:
+            for idx, score in idx_scores_map.items():
+                all_idx_scores_map[idx] = score
+        
+        for (idx, score) in sorted(all_idx_scores_map.items(),key=lambda k:k[0]):
+            score_list.append(score)
+
+        return np.array(score_list)
+
 def distance_(embeddings0, embeddings1):
     # # Distance based on cosine similarity
     # dot = np.sum(np.multiply(embeddings0, embeddings1), axis=1)
@@ -242,7 +291,7 @@ def verification(template_feats, unique_templates, p1=None, p2=None):
         c_f_list2 = all_c_f_list[template2id[p2[s]]]
         C_tilde_f_list2 = all_C_tilde_f_list[template2id[p2[s]]]
         
-        dist = enm.distance_(c_f_list1, C_tilde_f_list1, c_f_list2, C_tilde_f_list2)
+        dist = enm.distance_parallel(c_f_list1, C_tilde_f_list1, c_f_list2, C_tilde_f_list2)
         scores[s] = 1-dist
         if c % 10 == 0:
             print('Finish {}/{} pairs.'.format(c, total_sublists))
