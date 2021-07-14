@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/workspace/InvisibleFace")
+
 import math
 import argparse
 import numpy as np
@@ -5,14 +8,14 @@ from sklearn.model_selection import KFold
 from sklearn import metrics
 from scipy.optimize import brentq
 from scipy import interpolate
+from joblib import Parallel, delayed
+
 parser = argparse.ArgumentParser(description='Evaluation')
 parser.add_argument('--feat_list', type=str,
                     help='feature file.')
 parser.add_argument('--pair_list', type=str,
                     help='opensource pair list.')
 
-import sys
-sys.path.append("/workspace/InvisibleFace")
 
 
 # NOTE: may fail to import from below python files caused by the `args`.
@@ -62,7 +65,43 @@ class EnrollmentFeature:
             C_tilde_f_list.append(C_tilde_f)
         
         return c_f_list, C_tilde_f_list
-    
+
+    def enrollment_features_with_idxs(self, features, idxs):
+        idx_c_f_map, idx_C_tilde_f_map = {},{}
+        for i in range(len(idxs)):
+            idx = idxs[i]
+            feat = features[i]
+            c_f, C_tilde_f = self._enrollment_feature(feat)
+            idx_c_f_map[idx] = c_f
+            idx_C_tilde_f_map[idx] = C_tilde_f
+        
+        return [idx_c_f_map, idx_C_tilde_f_map]
+
+
+    def parallel_enrollment_features(self, features, num_jobs=80):
+        lnum = len(features)
+        idxs = list(range(0,lnum, math.ceil(lnum/num_jobs)))
+        idxs.append(lnum)
+        result_list = Parallel(n_jobs=num_jobs, verbose=100)(delayed(self.enrollment_features_with_idxs)(features[idxs[i]:idxs[i+1]], list(range(idxs[i], idxs[i+1]))) for i in range(num_jobs))
+        
+        all_idx_c_f_map, all_idx_C_tilde_f_map = {}, {}
+        for (idx_c_f_map,idx_C_tilde_f_map)  in result_list:
+            for idx,c_f in idx_c_f_map.items():
+                all_idx_c_f_map[idx] = c_f
+            for idx,C_tilde_f in idx_C_tilde_f_map.items():
+                all_idx_C_tilde_f_map[idx] = C_tilde_f
+
+        c_f_list, C_tilde_f_list = [], []
+        rt_feat_list = []
+        for (idx, c_f) in sorted(all_idx_c_f_map.items(),key=lambda k:k[0]):
+            c_f_list.append(c_f)
+
+        for (idx, C_tilde_f) in sorted(all_idx_C_tilde_f_map.items(),key=lambda k:k[0]):
+            C_tilde_f_list.append(C_tilde_f)
+
+
+        return c_f_list, C_tilde_f_list
+
     def distance_(self, c_x_list, C_tilde_x_list, c_y_list, C_tilde_y_list):
         num = len(c_x_list)
         dist = []
@@ -112,8 +151,8 @@ def calculate_roc(thresholds, embeddings0, embeddings1,
             mean = 0.
         # NOTE: add enrollment and crypto comparison.
         # Start for enroll features & generate distance.
-        c_f_list0, C_tilde_f_list0 = enm.enrollment_features(embeddings0-mean)
-        c_f_list1, C_tilde_f_list1 = enm.enrollment_features(embeddings1-mean)
+        c_f_list0, C_tilde_f_list0 = enm.parallel_enrollment_features(embeddings0-mean)
+        c_f_list1, C_tilde_f_list1 = enm.parallel_enrollment_features(embeddings1-mean)
         
         dist = enm.distance_(c_f_list0, C_tilde_f_list0, c_f_list1, C_tilde_f_list1)
 
