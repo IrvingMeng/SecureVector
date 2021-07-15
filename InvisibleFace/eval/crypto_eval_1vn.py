@@ -200,7 +200,7 @@ class EnrollmentFeature:
     
         return np.array(dist)
 
-    def pairs_distance(self, c_x_list, C_tilde_x_list, c_y_list, C_tilde_y_list,idxs_list):
+    def pairs_distance(self, c_x_list, C_tilde_x_list, c_y_list, C_tilde_y_list, idxs_list):
         idx_scores_map = {}
         for i in range(len(idxs_list)):
             idx = idxs_list[i]
@@ -220,7 +220,7 @@ class EnrollmentFeature:
             # calculate the score
             W_z = np.e**((w_z - 2**15 * self.L**8)/(2**14 * self.L**7*self.M))
             score = W_z * sum([bar_c_xy[i]/(s_list[i] * np.e**((u_list[i]-2*self.L)/self.M)) for i in range(self.K)])
-
+            score = np.clip(score, a_min=-1, a_max=1)
             idx_scores_map[idx] = np.arccos(score) / math.pi
         
         return idx_scores_map
@@ -279,11 +279,12 @@ def verification(template_feats, unique_templates, p1=None, p2=None):
     batchsize = 100000
     sublists = [total_pairs[i:i + batchsize]
                 for i in range(0, len(p1), batchsize)]
+    # NOTE: the template feature need to be normarlized .
+    template_feats/=np.linalg.norm(template_feats, axis=1, keepdims=True)
     all_c_f_list, all_C_tilde_f_list = enm.parallel_enrollment_features(np.array(template_feats))
     all_c_f_list = np.array(all_c_f_list)
     all_C_tilde_f_list = np.array(all_C_tilde_f_list)
     total_sublists = len(sublists)
-    # import pdb;pdb.set_trace()
     for c, s in enumerate(sublists):
         c_f_list1 = all_c_f_list[template2id[p1[s]]]
         C_tilde_f_list1 = all_C_tilde_f_list[template2id[p1[s]]]
