@@ -56,12 +56,12 @@ def enroll(feature, K, L, M, public_key):
     C_f = np.dot(u_list, base) + \
             np.dot(v_list, base) * (4*L)**(K) + \
               w_f * (4*L)**(2*K)
-    duration1 = time.time() - start
+    duration_plain = time.time() - start
 
     start = time.time()
     C_tilde_f = public_key.encrypt(C_f)
-    duration2 = time.time() - start 
-    return [c_f, C_tilde_f], [duration1, duration2]
+    duration_cypher = time.time() - start 
+    return [c_f, C_tilde_f], [duration_plain, duration_cypher]
 
 def main(K, L, M, feature_file, folder, public_key):
     """
@@ -77,20 +77,18 @@ def main(K, L, M, feature_file, folder, public_key):
 
     print('Encrypting features...')
     start = time.time()
-    enroll_duration = []
-    paillier_duration = []    
+    duration_plain = []
+    duration_cypher = []    
     for i, feature in enumerate(features):        
         result, durations = enroll(feature, K, L, M, publickey)
         np.save('{}/{}.npy'.format(folder, i), result)
         # measure time
-        enroll_duration.append(durations[0])
-        paillier_duration.append(durations[1])
+        duration_plain.append(durations[0])
+        duration_cypher.append(durations[1])
         if i % 1000 == 0:
             print('{}/{}'.format(i, n))
-        if i > 100:
-            break
     duration = time.time() - start
-    print('total duration {}, permutation duration {}, paillier duration {}, encrypted {} features'.format(duration, sum(enroll_duration), sum(paillier_duration), n))
+    print('total duration {}, permutation duration {}, paillier duration {}, encrypted {} features'.format(duration, sum(duration_plain), sum(duration_cypher), n))
 
 
 if __name__ == '__main__':

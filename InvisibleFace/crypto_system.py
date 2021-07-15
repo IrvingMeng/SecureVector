@@ -7,7 +7,7 @@ useage:
     generate keys:
         python crypo_system.py --genkey 1 --key_size 1024 
     calculate similarities:
-        python crypo_system.py --key_size 1024 --file1 $F1 --file2 $F2 --K 128
+        python crypo_system.py --key_size 1024 --K 128 --folder $F --pair_file $P --score_file $S
 """
 import sys
 import numpy as np
@@ -21,8 +21,9 @@ from itertools import repeat
 
 # parse the args
 parser = argparse.ArgumentParser(description='Match in InvisibleFace')
-parser.add_argument('--file1', default='', type=str)
-parser.add_argument('--file2', default='', type=str)
+parser.add_argument('--folder', default='', type=str, help='fold which stores the encrypted features')
+parser.add_argument('--pair_file', default='', type=str, help='pair file')
+parser.add_argument('--score_file', type=str, help='a file which stores the scores')
 parser.add_argument('--K', default=128, type=int)
 parser.add_argument('--key_size', default=1024, type=int)
 parser.add_argument('--genkey', default=0, type=int)
@@ -41,9 +42,7 @@ def load_enrolled_file(file):
     return c_f, C_tilde_f
 
 def decrypt_sum(C_tilde_x, C_tilde_y):   
-    start = time.time() 
     C_z = private_key.decrypt(C_tilde_x + C_tilde_y)
-    print('decrypt {}'.format(time.time()-start))
     return C_z
 
 def decode_uvw(C_f, K, L):
@@ -62,36 +61,62 @@ def decode_uvw(C_f, K, L):
     return u_list, v_list, int(w_f)
 
 
-def main(file1, file2, K, L, M):
-    # load files
-    c_x, C_tilde_x = load_enrolled_file(file1)
-    c_y, C_tilde_y = load_enrolled_file(file2)
-    # here you need to check if c_x, c_y, C_tilde_x, C_tilde_y are similar
-    # if they are similar, the code should refuse to encrypt the results
-
+def calculate_sim(c_x, c_y, C_tilde_x, C_tilde_y, K, L, M):
+    # decrypt 
     start = time.time()
+    C_z = decrypt_sum(C_tilde_x, C_tilde_y)
+    duration_cypher = time.time() - start
+
     # generate bar_c_xy
+    start = time.time()
     c_xy = c_x*c_y
     n = len(c_x)    
     bar_c_xy = [sum(c_xy[i:i+n//K]) for i in range(0, n, n//K)]
     
-    # decrypt 
-    C_z = decrypt_sum(C_tilde_x, C_tilde_y)
-    
     # recover u_list, v_list, w
     u_list, v_list, w_z = decode_uvw(C_z, K, L)
     s_list = [1 if v%2==0 else -1 for v in v_list]    
-
     # calculate the score
     W_z = np.e**((w_z - 2**15 * L**8)/(2**14 * L**7*M))
     score = W_z * sum([bar_c_xy[i]/(s_list[i] * np.e**((u_list[i]-2*L)/M)) for i in range(K)])
+    duration_plain = time.time() - start
 
-    print(time.time() - start)    
-    print(score)    
-    return score
+    return score, [duration_plain, duration_cypher]
 
 
-# load the file
+def main(folder, pair_file, score_file,  K, L, M):
+    # load pair_file
+    with open(pair_file, 'r') as f:
+        lines = f.readlines()
+
+    fw = open(score_file, 'w')
+
+    print('Decrypting features...')
+    start = time.time()
+    duration_plain = []
+    duration_cypher = []    
+
+    n = len(lines)
+    for i, line in enumerate(lines):
+        file1, file2, _ = line.strip().split(' ')
+        # load files
+        c_x, C_tilde_x = load_enrolled_file('{}/{}.npy'.format(folder, file1))
+        c_y, C_tilde_y = load_enrolled_file('{}/{}.npy'.format(folder, file2))
+        # here you need to check if c_x, c_y, C_tilde_x, C_tilde_y are similar
+        # if they are similar, the code should refuse to encrypt the results
+        score, durations = calculate_sim(c_x, c_y, C_tilde_x, C_tilde_y, K, L, M)
+        # measure time
+        duration_plain.append(durations[0])
+        duration_cypher.append(durations[1])      
+        fw.write('{} {} {}\n'.format(file1, file2, score))
+        if i % 1000 == 0:
+            print('{}/{}'.format(i, n))        
+    fw.close()
+
+    duration = time.time() - start
+    print('total duration {}, permutation duration {}, paillier duration {}, calculate {} pairs'.format(duration, sum(duration_plain), sum(duration_cypher), n))    
+
+
 if __name__ == '__main__':        
     L = int(np.ceil(2**(args.key_size/(2*args.K+9)-2) - 1))
     M = L/128
@@ -101,4 +126,4 @@ if __name__ == '__main__':
     print('K: {}   L: {}   M: {}'.format(args.K, L, M))
     print('the security level is: {}'.format(security_level))
 
-    main(args.file1, args.file2, args.K, L, M)
+    main(args.folder, args.pair_file, args.score_file, args.K, L, M)
