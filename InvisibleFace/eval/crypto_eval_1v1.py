@@ -139,13 +139,12 @@ def distance_(embeddings0, embeddings1):
     return dist
 
 def calculate_roc(thresholds, embeddings0, embeddings1,
-                  actual_issame, nrof_folds=10, subtract_mean=False):
+                  actual_issame, nrof_folds=1, subtract_mean=False):
     assert(embeddings0.shape[0] == embeddings1.shape[0])
     assert(embeddings0.shape[1] == embeddings1.shape[1])
 
     nrof_pairs = min(len(actual_issame), embeddings0.shape[0])
     nrof_thresholds = len(thresholds)
-    k_fold = KFold(n_splits=nrof_folds, shuffle=False)
 
     tprs = np.zeros((nrof_folds, nrof_thresholds))
     fprs = np.zeros((nrof_folds, nrof_thresholds))
