@@ -128,7 +128,16 @@ class EnrollmentFeature:
     
         return np.array(dist)
 
-    
+def distance_(embeddings0, embeddings1):
+    # Distance based on cosine similarity
+    dot = np.sum(np.multiply(embeddings0, embeddings1), axis=1)
+    norm = np.linalg.norm(embeddings0, axis=1) * np.linalg.norm(embeddings1, axis=1)
+    # shaving
+    similarity = dot/norm
+    similarity = np.clip(similarity, -1., 1.)
+    dist = np.arccos(similarity) / math.pi
+    return dist
+
 def calculate_roc(thresholds, embeddings0, embeddings1,
                   actual_issame, nrof_folds=10, subtract_mean=False):
     assert(embeddings0.shape[0] == embeddings1.shape[0])
@@ -144,26 +153,31 @@ def calculate_roc(thresholds, embeddings0, embeddings1,
 
     indices = np.arange(nrof_pairs)
     enm = EnrollmentFeature()
-    for fold_idx, (train_set, test_set) in enumerate(k_fold.split(indices)):
-        if subtract_mean:
-            mean = np.mean(np.concatenate([embeddings0[train_set], embeddings1[train_set]]), axis=0)
-        else:
-            mean = 0.
-        # NOTE: add enrollment and crypto comparison.
-        # Start for enroll features & generate distance.
-        c_f_list0, C_tilde_f_list0 = enm.parallel_enrollment_features(embeddings0-mean)
-        c_f_list1, C_tilde_f_list1 = enm.parallel_enrollment_features(embeddings1-mean)
-        
-        dist = enm.distance_(c_f_list0, C_tilde_f_list0, c_f_list1, C_tilde_f_list1)
+    if subtract_mean:
+        mean = np.mean(np.concatenate([embeddings0, embeddings1]), axis=0)
+    else:
+        mean = 0.
 
-        # Find the best threshold for the fold
-        acc_train = np.zeros((nrof_thresholds))
-        for threshold_idx, threshold in enumerate(thresholds):
-            _, _, acc_train[threshold_idx] = calculate_accuracy(threshold, dist[train_set], actual_issame[train_set])
-        best_threshold_index = np.argmax(acc_train)
-        for threshold_idx, threshold in enumerate(thresholds):
-            tprs[fold_idx,threshold_idx], fprs[fold_idx,threshold_idx], _ = calculate_accuracy(threshold, dist[test_set], actual_issame[test_set])
-        _, _, accuracy[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], dist[test_set], actual_issame[test_set])
+    feat0 = embeddings0-mean
+    feat0 /= np.linalg.norm(feat0, axis=1, keepdims=True)
+
+    feat1 = embeddings1-mean
+    feat1 /= np.linalg.norm(feat1, axis=1, keepdims=True)
+    
+    c_f_list0, C_tilde_f_list0 = enm.parallel_enrollment_features(feat0)
+    c_f_list1, C_tilde_f_list1 = enm.parallel_enrollment_features(feat1)
+
+    dist = enm.distance_(c_f_list0, C_tilde_f_list0, c_f_list1, C_tilde_f_list1)
+
+    # Find the best threshold for the fold
+    acc_train = np.zeros((nrof_thresholds))
+    for threshold_idx, threshold in enumerate(thresholds):
+        _, _, acc_train[threshold_idx] = calculate_accuracy(threshold, dist, actual_issame)
+    best_threshold_index = np.argmax(acc_train)
+    fold_idx = 0
+    for threshold_idx, threshold in enumerate(thresholds):
+        tprs[fold_idx,threshold_idx], fprs[fold_idx,threshold_idx], _ = calculate_accuracy(threshold, dist, actual_issame)
+    _, _, accuracy[fold_idx] = calculate_accuracy(thresholds[best_threshold_index], dist, actual_issame)
 
     tpr = np.mean(tprs, 0)
     fpr = np.mean(fprs, 0)
