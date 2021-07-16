@@ -7,7 +7,7 @@ useage:
     generate keys:
         python crypo_system.py --genkey 1 --key_size 1024 
     calculate similarities:
-        python crypo_system.py --key_size 1024 --K 128 --folder $F --pair_file $P --score_file $S
+        python crypo_system.py --key_size 1024 --K 128 --folder $F --pair_list $P --score_list $S
 """
 import sys
 import numpy as np
@@ -22,8 +22,8 @@ from itertools import repeat
 # parse the args
 parser = argparse.ArgumentParser(description='Match in InvisibleFace')
 parser.add_argument('--folder', default='', type=str, help='fold which stores the encrypted features')
-parser.add_argument('--pair_file', default='', type=str, help='pair file')
-parser.add_argument('--score_file', type=str, help='a file which stores the scores')
+parser.add_argument('--pair_list', default='', type=str, help='pair file')
+parser.add_argument('--score_list', type=str, help='a file which stores the scores')
 parser.add_argument('--K', default=128, type=int)
 parser.add_argument('--key_size', default=1024, type=int)
 parser.add_argument('--genkey', default=0, type=int)
@@ -31,11 +31,11 @@ args = parser.parse_args()
 
 if args.genkey == 1:
     pubkey, prikey = paillier.generate_paillier_keypair(n_length=args.key_size)
-    np.save('/face/irving/eval_feats/invisibleface/privatekey_{}.npy'.format(args.key_size), [prikey])
-    np.save('/face/irving/eval_feats/invisibleface/publickey_{}.npy'.format(args.key_size), [pubkey])
+    np.save('/face/irving/eval_feats/template_protection/invisibleface/privatekey_{}.npy'.format(args.key_size), [prikey])
+    np.save('/face/irving/eval_feats/template_protection/invisibleface/publickey_{}.npy'.format(args.key_size), [pubkey])
     exit(1)
 else:
-    private_key = np.load('/face/irving/eval_feats/invisibleface/privatekey_{}.npy'.format(args.key_size), allow_pickle=True)[0]
+    private_key = np.load('/face/irving/eval_feats/template_protection/invisibleface/privatekey_{}.npy'.format(args.key_size), allow_pickle=True)[0]
 
 def load_enrolled_file(file):
     c_f, C_tilde_f= np.load(file, allow_pickle=True)
@@ -84,12 +84,12 @@ def calculate_sim(c_x, c_y, C_tilde_x, C_tilde_y, K, L, M):
     return score, [duration_plain, duration_cypher]
 
 
-def main(folder, pair_file, score_file,  K, L, M):
+def main(folder, pair_list, score_list,  K, L, M):
     # load pair_file
-    with open(pair_file, 'r') as f:
+    with open(pair_list, 'r') as f:
         lines = f.readlines()
 
-    fw = open(score_file, 'w')
+    fw = open(score_list, 'w')
 
     print('Decrypting features...')
     start = time.time()
@@ -114,7 +114,7 @@ def main(folder, pair_file, score_file,  K, L, M):
     fw.close()
 
     duration = time.time() - start
-    print('total duration {}, permutation duration {}, paillier duration {}, calculate {} pairs'.format(duration, sum(duration_plain), sum(duration_cypher), n))    
+    print('total duration {}, permutation duration {}, paillier duration {}, calculate {} pairs.\n'.format(duration, sum(duration_plain), sum(duration_cypher), n))    
 
 
 if __name__ == '__main__':        
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     security_level = 2*args.K + args.K*np.log2(L)
 
     assert L > 1
-    print('K: {}   L: {}   M: {}'.format(args.K, L, M))
-    print('the security level is: {}'.format(security_level))
+    # print('K: {}   L: {}   M: {}'.format(args.K, L, M))
+    # print('the security level is: {}'.format(security_level))
 
-    main(args.folder, args.pair_file, args.score_file, args.K, L, M)
+    main(args.folder, args.pair_list, args.score_list, args.K, L, M)

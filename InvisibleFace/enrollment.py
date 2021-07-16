@@ -8,29 +8,30 @@ import os
 import time
 import random
 from itertools import repeat
+import shutil
 
 # parse the args
 parser = argparse.ArgumentParser(description='Enrollment in InvisibleFace')
 parser.add_argument('--K', default=128, type=int)
-parser.add_argument('--file', type=str)
+parser.add_argument('--feat_list', type=str)
 parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
-parser.add_argument('--public_key', default='/face/irving/eval_feats/invisibleface/publickey', type=str, help='path to the public key')
+parser.add_argument('--public_key', default='/face/irving/eval_feats/template_protection/invisibleface/publickey', type=str, help='path to the public key')
 parser.add_argument('--key_size', default=2048, type=int)
 args = parser.parse_args() 
 
 
-def load_features(feature_file):
+def load_features(feature_list):
     """
     load the features. 
     index (0,1,2,...), features
     """
     features = []
-    with open(feature_file, 'r') as f:
+    with open(feature_list, 'r') as f:
         lines = f.readlines()
     for line in lines:
         parts = line.strip().split(' ')
         feature = [float(e) for e in parts[1:]]
-        feature = feature/np.linalg.norm(feature)
+        feature = feature/np.linalg.norm(np.array(feature))
         features.append(feature)
     return features
 
@@ -43,7 +44,7 @@ def enroll(feature, K, L, M, public_key):
     v_list = [int(e) for e in np.random.rand(K)*(2*L)]
     s_list = [1 if v%2==0 else -1 for v in v_list]
 
-    # generate c_f
+    # generate c_f    
     n = len(feature)
     scale = [s_list[i] * np.e**((u_list[i]-L)/M)  for i in range(K)]
     b_f = [x for item in  scale for x in repeat(item, n//K)] * feature
@@ -63,15 +64,15 @@ def enroll(feature, K, L, M, public_key):
     duration_cypher = time.time() - start 
     return [c_f, C_tilde_f], [duration_plain, duration_cypher]
 
-def main(K, L, M, feature_file, folder, public_key):
+def main(K, L, M, feature_list, folder, public_key):
     """
     enrollment in invisibleface
     """
-    print('Pailllier init...')
+    # print('Pailllier init...')
     publickey = np.load(public_key, allow_pickle=True)[0]  # Optional param.: bit size (default = 2048)
 
-    print('loading features...')
-    features = load_features(feature_file)
+    # print('loading features...')
+    features = load_features(feature_list)
     n, dim = len(features), len(features[0])
     # L_list = [i for i in range(0, 2*L)]
 
@@ -81,14 +82,14 @@ def main(K, L, M, feature_file, folder, public_key):
     duration_cypher = []    
     for i, feature in enumerate(features):        
         result, durations = enroll(feature, K, L, M, publickey)
-        np.save('{}/{}.npy'.format(folder, i), result)
+        np.save('{}/{}.npy'.format(folder, i), np.array(result, np.dtype(object)))
         # measure time
         duration_plain.append(durations[0])
         duration_cypher.append(durations[1])
         if i % 1000 == 0:
             print('{}/{}'.format(i, n))
     duration = time.time() - start
-    print('total duration {}, permutation duration {}, paillier duration {}, encrypted {} features'.format(duration, sum(duration_plain), sum(duration_cypher), n))
+    print('total duration {}, permutation duration {}, paillier duration {}, encrypted {} features.\n'.format(duration, sum(duration_plain), sum(duration_cypher), n))
 
 
 if __name__ == '__main__':
@@ -99,8 +100,9 @@ if __name__ == '__main__':
     print('K: {}   L: {}   M: {}'.format(args.K, L, M))
     print('the security level is: {}'.format(security_level))
     assert L > 1
-    if not os.path.exists(args.folder):
-        os.makedirs(args.folder)
+    if os.path.exists(args.folder):
+        shutil.rmtree(args.folder)
+    os.makedirs(args.folder)
 
-    main(args.K, L, M, args.file, args.folder, '{}_{}.npy'.format(args.public_key, args.key_size))
+    main(args.K, L, M, args.feat_list, args.folder, '{}_{}.npy'.format(args.public_key, args.key_size))
 
