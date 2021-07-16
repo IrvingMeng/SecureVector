@@ -9,8 +9,7 @@ A library for plug-in template protection methods.
     
 # eval for lfw/cfp/agedb
 cd eval/
-./eval [index] 
-
+./eval1.sh [index] 
 ```
 
 
