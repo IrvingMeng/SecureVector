@@ -149,6 +149,9 @@ def gather_pair_features(args):
 
 
 def save_to_files(args, feature_list1, feature_list2, label, idx_list, i):
+    assert len(feature_list1)==len(idx_list)
+    assert len(feature_list2)==len(idx_list)
+    assert len(label)==len(idx_list)
     with open('{}_part{}'.format(args.template_feature, i), 'w') as ff:
         with open('{}_part{}'.format(args.pair_list, i), 'w') as pf:
             for j in range(len(idx_list)):
@@ -158,12 +161,12 @@ def save_to_files(args, feature_list1, feature_list2, label, idx_list, i):
                 issame = label[j]
 
                 featlist = [str(b) for b in feat1.tolist()]
-                ff.write('{} {}\n'.format(idx//2,' '.join(featlist)))
+                ff.write('{} {}\n'.format(idx,' '.join(featlist)))
 
                 featlist = [str(b) for b in feat2.tolist()]
-                ff.write('{} {}\n'.format(idx//2+1,' '.join(featlist)))
+                ff.write('{} {}\n'.format(idx+1,' '.join(featlist)))
                 
-                pf.write('{} {} {}\n'.format(idx//2, idx//2+1, issame))
+                pf.write('{} {} {}\n'.format(idx, idx+1, issame))
             
 
     
