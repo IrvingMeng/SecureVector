@@ -76,7 +76,7 @@ def main(K, L, M, feature_list, folder, public_key):
     n, dim = len(features), len(features[0])
     # L_list = [i for i in range(0, 2*L)]
 
-    print('Encrypting features...')
+    print('[InvisibleFace] Encrypting features...')
     start = time.time()
     duration_plain = []
     duration_cypher = []    

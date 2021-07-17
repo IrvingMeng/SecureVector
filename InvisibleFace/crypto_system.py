@@ -91,7 +91,7 @@ def main(folder, pair_list, score_list,  K, L, M):
 
     fw = open(score_list, 'w')
 
-    print('Decrypting features...')
+    print('[InvisibleFace] Decrypting features...')
     start = time.time()
     duration_plain = []
     duration_cypher = []    

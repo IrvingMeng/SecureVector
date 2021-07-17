@@ -2,7 +2,7 @@ M=$1
 # 0. baseline
 # 1. invisibleface
 
-METHOD_LIST=('baseline' 'invisibleface')
+METHOD_LIST=('baseline' 'invisibleface' 'ase')
 METHOD=${METHOD_LIST[$M]}
 
 cd ../
@@ -29,6 +29,14 @@ do
         python3 InvisibleFace/enrollment.py --feat_list ${FEAT_LIST} --key_size ${KS} --K ${K} --folder ${FOLD}
         # generate similarities
         python InvisibleFace/crypto_system.py --key_size ${KS} --K ${K} --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
+    
+    elif [[ $M == 2 ]]
+    then 
+        ASE_DIM=4
+        # enrollment
+        python3 ASE/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --ase_dim ${ASE_DIM}
+        # generate similarities
+        python ASE/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}        
     else
         echo 'key error'
     fi
