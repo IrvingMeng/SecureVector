@@ -22,9 +22,6 @@ import torch.backends.cudnn as cudnn
 from joblib import Parallel, delayed
 
 
-# the ijbc dataset is from insightface
-# using the cos similarity
-# no flip test
 
 # basic args
 parser = argparse.ArgumentParser(description='Evaluation')
@@ -125,88 +122,21 @@ def gather_pair_features(args):
     for count_template, uqt in enumerate(unique_templates):
         template2id[uqt] = count_template
 
-        # for i,feat in enumerate(template_feats):
-        #     featlist = [str(b) for b in feat.tolist()]
-        #     f.write('{} {}\n'.format(i,' '.join(featlist) ))
-
-    pair_idx = 0
     with open(args.template_feature, 'w') as ff:
-        with open(args.pair_list, 'w') as pf:
-            for i in range(len(p1)):
+        for i,feat in enumerate(template_feats):
+            featlist = [str(b) for b in feat.tolist()]
+            ff.write('{} {}\n'.format(i,' '.join(featlist)))
 
-                feat1 = template_feats[template2id[p1[i]]]
-                feat2 = template_feats[template2id[p2[i]]]
-
-                featlist = [str(b) for b in feat1.tolist()]
-                ff.write('{} {}\n'.format(pair_idx,' '.join(featlist)))
-
-                featlist = [str(b) for b in feat2.tolist()]
-                ff.write('{} {}\n'.format(pair_idx+1,' '.join(featlist)))
-
-                issame = label[i]
-                pf.write('{} {} {}\n'.format(pair_idx, pair_idx+1, issame))
-                pair_idx+=2
-
-
-def save_to_files(args, feature_list1, feature_list2, label, idx_list, i):
-    assert len(feature_list1)==len(idx_list)
-    assert len(feature_list2)==len(idx_list)
-    assert len(label)==len(idx_list)
-    with open('{}_part{}'.format(args.template_feature, i), 'w') as ff:
-        with open('{}_part{}'.format(args.pair_list, i), 'w') as pf:
-            for j in range(len(idx_list)):
-                idx = idx_list[j]
-                feat1 = feature_list1[j]
-                feat2 = feature_list2[j]
-                issame = label[j]
-
-                featlist = [str(b) for b in feat1.tolist()]
-                ff.write('{} {}\n'.format(idx,' '.join(featlist)))
-
-                featlist = [str(b) for b in feat2.tolist()]
-                ff.write('{} {}\n'.format(idx+1,' '.join(featlist)))
-                
-                pf.write('{} {} {}\n'.format(idx, idx+1, issame))
-            
-
-    
-def gather_pair_features_parallel(args):
-    templates, medias = read_template_media_list(
-        '{}/meta/ijb{}_face_tid_mid.txt'.format(args.base_dir, args.type)
-    )
-    p1, p2, label = read_template_pair_list(
-        '{}/meta/ijb{}_template_pair_label.txt'.format(
-            args.base_dir, args.type)
-    )
-    img_feats = read_feats(args)
-    template_feats, unique_templates = image2template_feature(img_feats,
-                                                              templates,
-                                                              medias)
-
-    template2id = np.zeros((max(unique_templates)+1), dtype=int)
-    for count_template, uqt in enumerate(unique_templates):
-        template2id[uqt] = count_template
-
-
-    num_jobs=80
-
-    lnum = len(p1)
-    idxs = list(range(0,lnum, math.ceil(lnum/num_jobs)))
-    idxs.append(lnum)
-    Parallel(n_jobs=num_jobs, verbose=100)(delayed(save_to_files)(
-            args,
-            template_feats[template2id[p1[idxs[i]:idxs[i+1]]]], 
-            template_feats[template2id[p2[idxs[i]:idxs[i+1]]]], 
-            label[idxs[i]:idxs[i+1]],
-            list(range(idxs[i], idxs[i+1])),
-            i) for i in range(num_jobs))
-
+    with open(args.pair_list, 'w') as pf:
+        for i in range(len(p1)):
+            issame = label[i]
+            pf.write('{} {} {}\n'.format(template2id[p1[i]], template2id[p2[i]], issame))
 
 
 def main():
     args = parser.parse_args()
-    # gather_pair_features(args)
-    gather_pair_features_parallel(args)
+    gather_pair_features(args)
+
 
 if __name__ == '__main__':
     main()
