@@ -10,13 +10,6 @@ import resource
 
 rng = default_rng()
 
-# parse the args
-parser = argparse.ArgumentParser(description='Enrollment in ASE')
-parser.add_argument('--feat_list', type=str)
-parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
-parser.add_argument('--ase_dim', type=int, default=4)
-args = parser.parse_args() 
-
 
 def load_features(feature_list):
     """
@@ -124,36 +117,31 @@ def generate_subspace(d, ase_dim, adv_features):
         proj_e = ortho_proj(e, d, basis)
         base_1 = proj_e - d_1
         basis_1.append(base_1)
-    return [d_1, basis_1], time.time() - start
+    return [d_1, basis_1]
 
 
-def main(feature_list, folder, ase_dim):
-    """
-    enrollment
-    """
-    # print('loading features...')
-    features = load_features(feature_list)
-    n, dim = len(features), len(features[0])
-    # L_list = [i for i in range(0, 2*L)]
+ase_dim=4
+feature_list = '/face/irving/eval_feats/magface_iresnet100/lfw_mf_10_110_0.45_0.8_20.list'    
 
-    print('[ASE] Encrypting features...')    
-    start = time.time()
-    duration_plain = []
-    for i, feature in enumerate(features):
-        ase_result, duration = generate_subspace(feature, ase_dim, features)
-        np.save('{}/{}.npy'.format(folder, i), np.array(ase_result, np.dtype(object)))
-        # measure time
-        duration_plain.append(duration)
-        if i % 1000 == 0:
-            print('{}/{}'.format(i, n))    
-    duration = time.time() - start
-    print('total duration {}, ase duration {},  encrypted {} features.\n'.format(duration, sum(duration_plain), n))
+# print('loading features...')
+features = load_features(feature_list)
+n, dim = len(features), len(features[0])
+# L_list = [i for i in range(0, 2*L)]
 
+print('[ASE] Encrypting features...') 
+r_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss   
+start = time.time()
 
-if __name__ == '__main__':
-    if os.path.exists(args.folder):
-        shutil.rmtree(args.folder)
-    os.makedirs(args.folder)
+duration_plain = []
+results = []
+for i, feature in enumerate(features):
+    ase_result = generate_subspace(feature, ase_dim, features)
+    results.append(ase_result)
+    if i % 1000 == 0:
+        print('{}/{}'.format(i, n))         
+  
+duration = time.time() - start
+r = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - r_init
+print('total memory {}, total duration {}, encrypted {} features.\n'.format(r, duration, n))
 
-    main( args.feat_list, args.folder, args.ase_dim)
 
