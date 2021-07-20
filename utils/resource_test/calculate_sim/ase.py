@@ -7,13 +7,6 @@ import time
 import random
 import resource
 
-# parse the args
-parser = argparse.ArgumentParser(description='Match in ASE')
-parser.add_argument('--folder', default='', type=str, help='fold which stores the encrypted features')
-parser.add_argument('--pair_list', default='', type=str, help='pair file')
-parser.add_argument('--score_list', type=str, help='a file which stores the scores')
-args = parser.parse_args()    
-
 def load_enrolled_file(file):
     d, basis_d= np.load(file, allow_pickle=True)
     return d, basis_d
@@ -57,8 +50,7 @@ def dist_s_to_s(d, basis_d, e, basis_e):
     """
     subspace-to-subspace distance
     """
-    assert len(basis_d) == len(basis_e)
-    start = time.time()
+    assert len(basis_d) == len(basis_e)    
     num_basis = len(basis_d)
     # generate orthogonal basis
     D = np.array(basis_d)
@@ -81,40 +73,42 @@ def dist_s_to_s(d, basis_d, e, basis_e):
     y_star = e + np.dot(alpha_beta[num_basis:], basis_e)
     
     dist = np.linalg.norm(x_star - y_star)
-    return dist, time.time() - start
+    return dist
 
 
-def main(folder, pair_list, score_list):
-    # load pair_file
-    with open(pair_list, 'r') as f:
-        lines = f.readlines()
-
-    fw = open(score_list, 'w')
-
-    print('[ASE] Decrypting features...')    
-    start = time.time()
-    duration_plain = []    
-
-    n = len(lines)
-    for i, line in enumerate(lines):
-        file1, file2, _ = line.strip().split(' ')
-        # load files
-        d, basis_d = load_enrolled_file('{}/{}.npy'.format(folder, file1))
-        e, basis_e = load_enrolled_file('{}/{}.npy'.format(folder, file2))
-
-        dist, duration = dist_s_to_s(d, basis_d, e, basis_e)
-        # measure time
-        score = (2 - dist**2)/2
-        score = min(max(score, -1), 1)
-        duration_plain.append(duration)        
-        fw.write('{} {} {}\n'.format(file1, file2, score))
-        if i % 1000 == 0:
-            print('{}/{}'.format(i, n))        
-    fw.close()
-    
-    duration = time.time() - start
-    print('total duration {}, ase duration {}, calculate {} pairs.\n'.format(duration, sum(duration_plain), n))    
+folder = '/face/irving/eval_feats/template_protection/ase/lfw/'
+pair_list ='/face/irving/data/ms1m_eval/lfw/pair.list'
 
 
-if __name__ == '__main__':        
-    main(args.folder, args.pair_list, args.score_list)
+
+with open(pair_list, 'r') as f:
+    lines = f.readlines()
+
+r_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss   
+
+tmp = []
+for i, line in enumerate(lines):
+    file1, file2, _ = line.strip().split(' ')
+    # load files
+    d, basis_d = load_enrolled_file('{}/{}.npy'.format(folder, file1))
+    e, basis_e = load_enrolled_file('{}/{}.npy'.format(folder, file2))
+    tmp.append([d, basis_d, e, basis_e])
+
+print('[ASE] Decrypting features...')    
+start = time.time()
+n = len(lines)
+for i, onepair in enumerate(tmp):
+    d, basis_d, e, basis_e = onepair
+    dist = dist_s_to_s(d, basis_d, e, basis_e)
+    # measure time
+    score = (2 - dist**2)/2
+    score = min(max(score, -1), 1)
+    if i % 1000 == 0:
+        print('{}/{}'.format(i, n))        
+
+
+duration = time.time() - start
+r = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - r_init
+print('total memory {}, total duration {}, encrypted {} features.\n'.format(r, duration, n))  
+
+

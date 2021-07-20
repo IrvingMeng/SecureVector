@@ -2,10 +2,10 @@ M=$1
 # 0. baseline
 # 1. invisibleface
 
-METHOD_LIST=('baseline' 'invisibleface' 'ase')
+METHOD_LIST=('baseline' 'invisibleface' 'ase' 'ironmask' 'sfm')
 METHOD=${METHOD_LIST[$M]}
 
-cd ../
+# cd ../
 
 for BM in 'lfw' 'cfp' 'agedb'
 do 
@@ -24,7 +24,7 @@ do
     elif [[ $M == 1 ]]
     then
         KS=1024
-        K=64
+        K=32
         # enrollment
         python3 InvisibleFace/enrollment.py --feat_list ${FEAT_LIST} --key_size ${KS} --K ${K} --folder ${FOLD}
         # generate similarities
@@ -36,7 +36,24 @@ do
         # enrollment
         python3 ASE/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --ase_dim ${ASE_DIM}
         # generate similarities
-        python ASE/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}        
+        python ASE/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  
+
+    elif [[ $M == 3 ]]
+    then 
+        ALPHA=16
+        # enrollment
+        python3 IronMask/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --alpha ${ALPHA}        
+        # generate similarities
+        python IronMask/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  --alpha ${ALPHA} --feat_list ${FEAT_LIST}
+
+    elif [[ $M == 4 ]]
+    then 
+        PRECISION=125        
+        # enrollment
+        python3 SFM/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --precision ${PRECISION}               
+        # generate similarities
+        python SFM/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  --precision ${PRECISION}
+
     else
         echo 'key error'
     fi
@@ -50,6 +67,5 @@ do
     SCORE_LIST=${FOLD}/score.list
     
     # eval for lfw/cfp/agedb
-    python eval/eval_1v1.py --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
-
+    python eval/eval_1v1.py --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}    
 done    

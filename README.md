@@ -6,6 +6,9 @@ A library for plug-in template protection methods.
 # [index] for method
     # 0. baseline
     # 1. invisibleface
+    # 2. ase
+    # 3. ironmask
+    # 4. sfm
     
 # eval for lfw/cfp/agedb
 cd eval/
@@ -29,8 +32,6 @@ Note: can only protect gallery. Probe templates are exposed.
 
 ## FHE
 [2018] Secure Face Matching Using Fully Homomorphic Encryption
-
-## HERS
 
 [2021] HERS: Homomorphically Encrypted Representation Search
 

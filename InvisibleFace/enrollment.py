@@ -9,6 +9,7 @@ import time
 import random
 from itertools import repeat
 import shutil
+import resource
 
 # parse the args
 parser = argparse.ArgumentParser(description='Enrollment in InvisibleFace')
@@ -61,33 +62,32 @@ def enroll(feature, K, L, M, public_key):
 
     start = time.time()
     C_tilde_f = public_key.encrypt(C_f)
-    duration_cypher = time.time() - start 
+    duration_cypher = time.time() - start     
     return [c_f, C_tilde_f], [duration_plain, duration_cypher]
 
 def main(K, L, M, feature_list, folder, public_key):
     """
     enrollment in invisibleface
     """
-    # print('Pailllier init...')
-    publickey = np.load(public_key, allow_pickle=True)[0]  # Optional param.: bit size (default = 2048)
-
     # print('loading features...')
     features = load_features(feature_list)
     n, dim = len(features), len(features[0])
-    # L_list = [i for i in range(0, 2*L)]
 
-    print('[InvisibleFace] Encrypting features...')
+    print('[InvisibleFace] Encrypting features...')    
+    publickey = np.load(public_key, allow_pickle=True)[0]  
+    
     start = time.time()
     duration_plain = []
-    duration_cypher = []    
+    duration_cypher = []     
+    # r_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     for i, feature in enumerate(features):        
-        result, durations = enroll(feature, K, L, M, publickey)
+        result, durations= enroll(feature, K, L, M, publickey)
         np.save('{}/{}.npy'.format(folder, i), np.array(result, np.dtype(object)))
         # measure time
         duration_plain.append(durations[0])
         duration_cypher.append(durations[1])
         if i % 1000 == 0:
-            print('{}/{}'.format(i, n))
+            print('{}/{}'.format(i, n))    
     duration = time.time() - start
     print('total duration {}, permutation duration {}, paillier duration {}, encrypted {} features.\n'.format(duration, sum(duration_plain), sum(duration_cypher), n))
 

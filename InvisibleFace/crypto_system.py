@@ -17,6 +17,7 @@ import argparse
 import os
 import time
 import random
+import resource
 from itertools import repeat
 
 # parse the args
@@ -91,12 +92,12 @@ def main(folder, pair_list, score_list,  K, L, M):
 
     fw = open(score_list, 'w')
 
-    print('[InvisibleFace] Decrypting features...')
+    print('[InvisibleFace] Decrypting features...')    
     start = time.time()
     duration_plain = []
     duration_cypher = []    
 
-    n = len(lines)
+    n = len(lines)    
     for i, line in enumerate(lines):
         file1, file2, _ = line.strip().split(' ')
         # load files
@@ -112,9 +113,9 @@ def main(folder, pair_list, score_list,  K, L, M):
         if i % 1000 == 0:
             print('{}/{}'.format(i, n))        
     fw.close()
-
+    
     duration = time.time() - start
-    print('total duration {}, permutation duration {}, paillier duration {}, calculate {} pairs.\n'.format(duration, sum(duration_plain), sum(duration_cypher), n))    
+    print('otal duration {}, permutation duration {}, paillier duration {}, calculate {} pairs.\n'.format(duration, sum(duration_plain), sum(duration_cypher), n))    
 
 
 if __name__ == '__main__':        
