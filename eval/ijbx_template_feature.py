@@ -1,37 +1,21 @@
 #!/usr/bin/env python
+# Generate feature.list and pair.list for ijbx
 
 import argparse
 import os
-import cv2
-import math
 import numpy as np
-from tqdm import tqdm
-from sklearn.model_selection import KFold
-from sklearn import metrics
-from scipy.optimize import brentq
-from scipy import interpolate
-from sklearn.metrics import roc_curve, auc
-# from prettytable import PrettyTable
-
 import torch
-import torch.nn as nn
-import torch.utils.data as data
 import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
-
-from joblib import Parallel, delayed
-
-
 
 # basic args
 parser = argparse.ArgumentParser(description='Evaluation')
 parser.add_argument('--feat_list', type=str,
-                    help='The cache folder for validation report')
+                    help='the ijbx feature list')
 parser.add_argument('--base_dir', default='/ssd/irving/data/IJB_release/IJBC/')
 parser.add_argument('--type', default='c')
 parser.add_argument('--embedding_size', default=512, type=int)
-parser.add_argument('--template_feature', type=str)
-parser.add_argument('--pair_list', type=str)
+parser.add_argument('--template_feature', type=str,help='the template feature file')
+parser.add_argument('--pair_list', type=str, help='the pair list file')
 
 def read_template_media_list(path):
     ijb_meta, templates, medias = [], [], []
@@ -122,15 +106,15 @@ def gather_pair_features(args):
     for count_template, uqt in enumerate(unique_templates):
         template2id[uqt] = count_template
 
-    with open(args.template_feature, 'w') as ff:
+    with open(args.template_feature, 'w') as f:
         for i,feat in enumerate(template_feats):
             featlist = [str(b) for b in feat.tolist()]
-            ff.write('{} {}\n'.format(i,' '.join(featlist)))
+            f.write('{} {}\n'.format(i,' '.join(featlist)))
 
-    with open(args.pair_list, 'w') as pf:
+    with open(args.pair_list, 'w') as f:
         for i in range(len(p1)):
             issame = label[i]
-            pf.write('{} {} {}\n'.format(template2id[p1[i]], template2id[p2[i]], issame))
+            f.write('{} {} {}\n'.format(template2id[p1[i]], template2id[p2[i]], issame))
 
 
 def main():
