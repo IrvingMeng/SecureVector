@@ -100,7 +100,7 @@ def check_valid(basis):
     return 1
 
 
-def generate_subspace(d, ase_dim, adv_features):
+def generate_subspace(d, dim, ase_dim, adv_features):
     """
     generate a subspace on d
     """
@@ -109,18 +109,18 @@ def generate_subspace(d, ase_dim, adv_features):
     rand_dim = int(ase_dim/2)
     adv_dim = ase_dim - rand_dim
     while 1:
-        basis = gen_random_basis(n=rand_dim) + gen_adversarial_basis(adv_features, d, adv_dim)
+        basis = gen_random_basis(n=rand_dim, dim=dim) + gen_adversarial_basis(adv_features, d, adv_dim)
         if check_valid(basis) == 1:
             break
     
     # permute translation vector
-    e = gen_random_basis(1)
+    e = gen_random_basis(1, dim=dim)
     d_1 = ortho_proj(e, d, basis)
     
     # permute basis
     basis_1 = []
-    for i in range(ase_dim):
-        e = gen_random_basis(1)
+    for _ in range(ase_dim):
+        e = gen_random_basis(1, dim=dim)
         proj_e = ortho_proj(e, d, basis)
         base_1 = proj_e - d_1
         basis_1.append(base_1)
@@ -140,7 +140,7 @@ def main(feature_list, folder, ase_dim):
     start = time.time()
     duration_plain = []
     for i, feature in enumerate(features):
-        ase_result, duration = generate_subspace(feature, ase_dim, features)
+        ase_result, duration = generate_subspace(feature, dim, ase_dim, features)
         np.save('{}/{}.npy'.format(folder, i), np.array(ase_result, np.dtype(object)))
         # measure time
         duration_plain.append(duration)
