@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 import sys
+import math
 import numpy as np
 import argparse
 import os
 import time
 import random
 import resource
+from joblib import Parallel, delayed
 
 # parse the args
 parser = argparse.ArgumentParser(description='Match in ASE')
@@ -83,6 +85,43 @@ def dist_s_to_s(d, basis_d, e, basis_e):
     dist = np.linalg.norm(x_star - y_star)
     return dist, time.time() - start
 
+def chunkify(fname,size=1024*1024):
+    fileEnd = os.path.getsize(fname)
+    with open(fname,'rb') as f:
+        chunkEnd = f.tell()
+        while True:
+            chunkStart = chunkEnd
+            f.seek(size,1)
+            f.readline()
+            chunkEnd = f.tell()
+            yield chunkStart, chunkEnd - chunkStart
+            if chunkEnd > fileEnd:
+                break
+
+def process_lines(chunk_info_list, pair_list, folder, i):
+    score_list = []
+    durations_list = []
+    partid_lineinfo_map = {}
+    with open(pair_list,'r') as f:
+        for j in range(len(chunk_info_list)):
+            chunkStart, chunkSize = chunk_info_list[j]
+            f.seek(chunkStart)
+            lines = f.read(chunkSize).splitlines()
+            for line in lines:
+                file1, file2, _ = line.strip().split(' ')
+                # load files
+                d, basis_d = load_enrolled_file('{}/{}.npy'.format(folder, file1))
+                e, basis_e = load_enrolled_file('{}/{}.npy'.format(folder, file2))
+                dist, duration = dist_s_to_s(d, basis_d, e, basis_e)
+                score = (2 - dist**2)/2
+                score = min(max(score, -1), 1)
+
+                score_list.append((file1, file2, score))
+                durations_list.append((file1, file2, duration))
+
+    partid_lineinfo_map[i] = [score_list, durations_list]
+
+    return partid_lineinfo_map
 
 def main(folder, pair_list, score_list):
     # load pair_file
@@ -96,20 +135,51 @@ def main(folder, pair_list, score_list):
     duration_plain = []    
 
     n = len(lines)
-    for i, line in enumerate(lines):
-        file1, file2, _ = line.strip().split(' ')
-        # load files
-        d, basis_d = load_enrolled_file('{}/{}.npy'.format(folder, file1))
-        e, basis_e = load_enrolled_file('{}/{}.npy'.format(folder, file2))
+    if n < 100000:
+        for i, line in enumerate(lines):
+            file1, file2, _ = line.strip().split(' ')
+            # load files
+            d, basis_d = load_enrolled_file('{}/{}.npy'.format(folder, file1))
+            e, basis_e = load_enrolled_file('{}/{}.npy'.format(folder, file2))
 
-        dist, duration = dist_s_to_s(d, basis_d, e, basis_e)
-        # measure time
-        score = (2 - dist**2)/2
-        score = min(max(score, -1), 1)
-        duration_plain.append(duration)        
-        fw.write('{} {} {}\n'.format(file1, file2, score))
-        if i % 1000 == 0:
-            print('{}/{}'.format(i, n))        
+            dist, duration = dist_s_to_s(d, basis_d, e, basis_e)
+            # measure time
+            score = (2 - dist**2)/2
+            score = min(max(score, -1), 1)
+            duration_plain.append(duration)
+            fw.write('{} {} {}\n'.format(file1, file2, score))
+            if i % 1000 == 0:
+                print('{}/{}'.format(i, n))
+    else:
+        # Paralel Generate the scores.
+        chunk_info_list =list(chunkify(pair_list,1024*1024))
+        lnum = len(chunk_info_list)
+        num_jobs = min(lnum, 10)
+        idxs = list(range(0,lnum, math.ceil(lnum/num_jobs)))
+        idxs.append(lnum)
+        # recheck the number of jobs.
+        num_jobs = len(idxs) - 1
+        result_list = Parallel(n_jobs=num_jobs, verbose=100)(delayed(process_lines)(
+            chunk_info_list[idxs[i]:idxs[i+1]], pair_list, folder, i) for i in range(num_jobs))
+
+        # concat in order
+        all_partid_lineinfo_map = {}
+        for (partid_lineinfo_map)  in result_list:
+            for partid, info in partid_lineinfo_map.items():
+                all_partid_lineinfo_map[partid] = info
+
+        i = 0
+        for j in range(num_jobs):
+            score_list, durations_list = all_partid_lineinfo_map[j]
+            assert len(score_list) == len(durations_list)
+            for lineid, scoreinfo in enumerate(score_list):
+                file1, file2, score = scoreinfo
+                fw.write('{} {} {}\n'.format(file1, file2, score))
+                _, _, duration = durations_list[lineid]
+                duration_plain.append(duration)
+                if i % 1000 == 0:
+                    print('{}/{}'.format(i, n))
+                i += 1
     fw.close()
     
     duration = time.time() - start

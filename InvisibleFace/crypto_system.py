@@ -158,7 +158,7 @@ def main(folder, pair_list, score_list,  K, L, M):
         lnum = len(chunk_info_list)
         idxs = list(range(0,lnum, math.ceil(lnum/num_jobs)))
         idxs.append(lnum)
-
+        num_jobs = len(idxs) - 1
         result_list = Parallel(n_jobs=num_jobs, verbose=100)(delayed(process_lines)(
             chunk_info_list[idxs[i]:idxs[i+1]], pair_list, folder, K, L, M, i) for i in range(num_jobs))
         # concat in order
