@@ -15,8 +15,9 @@ import random
 parser = argparse.ArgumentParser(description='Match in directly')
 parser.add_argument('--feat_list', type=str)
 parser.add_argument('--pair_list', default='', type=str, help='pair file')
-parser.add_argument('--score_list', type=str, help='a file which stores the scores')
-args = parser.parse_args() 
+parser.add_argument('--score_list', type=str,
+                    help='a file which stores the scores')
+args = parser.parse_args()
 
 
 def load_features(feature_list):
@@ -45,15 +46,15 @@ def main(feat_list, pair_list, score_list):
     for i, line in enumerate(lines):
         file1, file2, _ = line.strip().split(' ')
         score = np.dot(features[int(file1)], features[int(file2)])
-        # measure time   
+        # measure time
         fw.write('{} {} {}\n'.format(file1, file2, score))
         if i % 1000 == 0:
-            print('{}/{}'.format(i, n))        
-    fw.close()        
+            print('{}/{}'.format(i, n))
+    fw.close()
 
 
 if __name__ == '__main__':
     folder = '/'.join(args.score_list.split('/')[:-1])
     if not os.path.exists(folder):
-        os.makedirs(folder)    
+        os.makedirs(folder)
     main(args.feat_list, args.pair_list, args.score_list)

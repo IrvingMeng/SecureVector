@@ -16,9 +16,10 @@ rng = default_rng()
 # parse the args
 parser = argparse.ArgumentParser(description='Enrollment in IronMask')
 parser.add_argument('--feat_list', type=str)
-parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
+parser.add_argument('--folder', type=str,
+                    help='use to store the keys and encrypted features')
 parser.add_argument('--alpha', type=int, default=16)
-args = parser.parse_args() 
+args = parser.parse_args()
 
 
 def load_features(feature_list):
@@ -59,19 +60,19 @@ def compute_rotation(t, c):
     assert(abs(np.linalg.norm(t)-1) < assert_error)
     assert(abs(np.linalg.norm(c)-1) < assert_error)
     assert(len(t) == len(c))
-    
+
     # here starts
     I = np.identity(len(t))
     w = c - np.dot(t, c)*t
     w = w / np.linalg.norm(w)
-    
+
     cos_theta = np.dot(t, c)
     sin_theta = math.sin(math.acos(cos_theta))
-    
+
     R = I - np.outer(t, t) - np.outer(w, w) + \
         (np.outer(t, t) + np.outer(w, w)) * cos_theta + \
         (np.outer(w, t) - np.outer(t, w)) * sin_theta
-    return R    
+    return R
 
 
 def enroll_ironmask(feature, alpha):
@@ -82,7 +83,7 @@ def enroll_ironmask(feature, alpha):
     feature = feature/np.linalg.norm(feature)
 
     Q = ortho_group.rvs(dim)
-    R = compute_rotation(np.dot(Q,feature), c)
+    R = compute_rotation(np.dot(Q, feature), c)
     P = np.dot(R, Q)
     # hash
     hash_func = hashlib.md5()
@@ -98,20 +99,22 @@ def main(feature_list, folder, alpha):
     # print('loading features...')
     features = load_features(feature_list)
     n, dim = len(features), len(features[0])
-    # L_list = [i for i in range(0, 2*L)]    
+    # L_list = [i for i in range(0, 2*L)]
 
-    print('[IronMask] Encrypting features...')    
+    print('[IronMask] Encrypting features...')
     start = time.time()
     duration_plain = []
     for i, feature in enumerate(features):
-        result, duration = enroll_ironmask(feature, alpha)        
-        np.save('{}/{}.npy'.format(folder, i), np.array(result, np.dtype(object)))
+        result, duration = enroll_ironmask(feature, alpha)
+        np.save('{}/{}.npy'.format(folder, i),
+                np.array(result, np.dtype(object)))
         # measure time
         duration_plain.append(duration)
         if i % 1000 == 0:
-            print('{}/{}'.format(i, n))    
+            print('{}/{}'.format(i, n))
     duration = time.time() - start
-    print('total duration {}, ironmask duration {},  encrypted {} features.\n'.format(duration, sum(duration_plain), n))
+    print('total duration {}, ironmask duration {},  encrypted {} features.\n'.format(
+        duration, sum(duration_plain), n))
 
 
 if __name__ == '__main__':
@@ -119,5 +122,4 @@ if __name__ == '__main__':
         shutil.rmtree(args.folder)
     os.makedirs(args.folder)
 
-    main( args.feat_list, args.folder, args.alpha)
-
+    main(args.feat_list, args.folder, args.alpha)

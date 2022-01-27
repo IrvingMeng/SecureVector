@@ -19,7 +19,8 @@ parser = argparse.ArgumentParser(description='Evaluation')
 parser.add_argument('--pair_list', type=str,
                     help='opensource pair list.')
 parser.add_argument('--score_list', type=str,
-                    help='opensource score list.')                    
+                    help='opensource score list.')
+
 
 def perform_1vn_eval(label, scores):
     fpr, tpr, _ = roc_curve(label, scores)
@@ -35,8 +36,9 @@ def perform_1vn_eval(label, scores):
         print('  {:0.4f}'.format(tpr[min_index]))
 
         to_print = to_print + '  {:0.4f}'.format(tpr[min_index])
-    
+
     print(to_print)
+
 
 def load_pair_score(pair_list, score_list):
     with open(pair_list, 'r') as f:
@@ -52,7 +54,7 @@ def load_pair_score(pair_list, score_list):
         assert parts1[0] == parts2[0]
         assert parts1[1] == parts2[1]
         is_same = int(parts1[2])
-        score =  float(parts2[2])
+        score = float(parts2[2])
         targets.append(is_same)
         scores.append(score)
     return targets, scores
@@ -66,6 +68,7 @@ def eval(pair_list, score_list):
 def main():
     args = parser.parse_args()
     eval(args.pair_list, args.score_list)
+
 
 if __name__ == '__main__':
     main()

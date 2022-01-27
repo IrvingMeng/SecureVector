@@ -10,12 +10,14 @@ import resource
 
 # parse the args
 parser = argparse.ArgumentParser(description='Match in IronMask')
-parser.add_argument('--folder', default='', type=str, help='fold which stores the encrypted features')
+parser.add_argument('--folder', default='', type=str,
+                    help='fold which stores the encrypted features')
 parser.add_argument('--pair_list', default='', type=str, help='pair file')
-parser.add_argument('--score_list', type=str, help='a file which stores the scores')
+parser.add_argument('--score_list', type=str,
+                    help='a file which stores the scores')
 parser.add_argument('--alpha', type=int, default=16)
 parser.add_argument('--feat_list', type=str)
-args = parser.parse_args()   
+args = parser.parse_args()
 
 
 def load_features(feature_list):
@@ -35,7 +37,7 @@ def load_features(feature_list):
 
 
 def load_enrolled_file(file):
-    P, r= np.load(file, allow_pickle=True)
+    P, r = np.load(file, allow_pickle=True)
     return P, r
 
 
@@ -64,7 +66,7 @@ def check_ironmask(feature, P, r, alpha):
     hash_func = hashlib.md5()
     hash_func.update(c_prime.tobytes())
     r_prime = hash_func.hexdigest()
-    return int(r_prime==r), time.time() - start
+    return int(r_prime == r), time.time() - start
 
 
 def main(folder, feat_list, pair_list, score_list, alpha):
@@ -78,7 +80,7 @@ def main(folder, feat_list, pair_list, score_list, alpha):
     print('[IronMask] Decrypting features...')
     r_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     start = time.time()
-    duration_plain = []            
+    duration_plain = []
     n = len(lines)
     for i, line in enumerate(lines):
         file1, file2, _ = line.strip().split(' ')
@@ -87,15 +89,16 @@ def main(folder, feat_list, pair_list, score_list, alpha):
         P, r = load_enrolled_file('{}/{}.npy'.format(folder, file2))
 
         score, duration = check_ironmask(feature1, P, r, alpha)
-        duration_plain.append(duration)        
+        duration_plain.append(duration)
         fw.write('{} {} {}\n'.format(file1, file2, score))
         if i % 1000 == 0:
-            print('{}/{}'.format(i, n))        
+            print('{}/{}'.format(i, n))
     fw.close()
-    
+
     duration = time.time() - start
-    print('total duration {}, ironmask duration {}, calculate {} pairs.\n'.format(duration, sum(duration_plain), n))    
+    print('total duration {}, ironmask duration {}, calculate {} pairs.\n'.format(
+        duration, sum(duration_plain), n))
 
 
-if __name__ == '__main__':        
+if __name__ == '__main__':
     main(args.folder, args.feat_list, args.pair_list, args.score_list, args.alpha)

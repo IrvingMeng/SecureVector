@@ -4,7 +4,7 @@ METHOD_LIST=('baseline' 'securevector' 'ase' 'ironmask' 'sfm')
 METHOD=${METHOD_LIST[$M]}
 
 # cd ../
-for BM in 'b' #'c'
+for BM in 'b' 'c'
 do
     # Convert ijbx feature to id-template feature
     IJBX_BASE_FOLD=data/ijb/
@@ -81,7 +81,7 @@ do
     fi
 done
 
-for BM in 'b' #'c'
+for BM in 'b' 'c'
 do 
     echo [${METHOD}]: ${BM}
     IJBX_BASE_FOLD=data/ijb/

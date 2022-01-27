@@ -130,3 +130,13 @@ dmypy.json
 
 # Mac file
 *DS_Store
+
+# keys
+libs/SFM/keys/
+libs/SecureVector/keys/
+
+# data
+data/
+*.tar
+# results
+results/

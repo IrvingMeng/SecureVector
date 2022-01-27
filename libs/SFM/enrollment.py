@@ -12,12 +12,15 @@ import tenseal as ts
 import tenseal.sealapi as sealapi
 
 # parse the args
-parser = argparse.ArgumentParser(description='Enrollment in SecureFaceMatching')
+parser = argparse.ArgumentParser(
+    description='Enrollment in SecureFaceMatching')
 parser.add_argument('--feat_list', type=str)
-parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
-parser.add_argument('--public_key', default='libs/SFM/keys/public_key', type=str, help='path to the public key')
+parser.add_argument('--folder', type=str,
+                    help='use to store the keys and encrypted features')
+parser.add_argument('--public_key', default='libs/SFM/keys/public_key',
+                    type=str, help='path to the public key')
 parser.add_argument('--precision', default=125, type=int)
-args = parser.parse_args() 
+args = parser.parse_args()
 
 
 def load_features(feature_list):
@@ -35,6 +38,7 @@ def load_features(feature_list):
         features.append(feature)
     return features
 
+
 def enroll(feature, precision, encryptor, batchenc, ctx):
     """
     enroll a feature
@@ -48,7 +52,7 @@ def enroll(feature, precision, encryptor, batchenc, ctx):
     ciphertext = sealapi.Ciphertext(ctx)
     encryptor.encrypt(plaintext, ciphertext)
     duration = time.time() - start
-    return ciphertext, duration 
+    return ciphertext, duration
 
 
 def load_key(public_key):
@@ -58,16 +62,17 @@ def load_key(public_key):
     parms = sealapi.EncryptionParameters(sealapi.SCHEME_TYPE.BFV)
     parms.set_poly_modulus_degree(poly_modulus_degree)
     parms.set_plain_modulus(plain_modulus)
-    coeff = sealapi.CoeffModulus.BFVDefault(poly_modulus_degree, sealapi.SEC_LEVEL_TYPE.TC128)
+    coeff = sealapi.CoeffModulus.BFVDefault(
+        poly_modulus_degree, sealapi.SEC_LEVEL_TYPE.TC128)
     parms.set_coeff_modulus(coeff)
     ctx = sealapi.SEALContext(parms, True, sealapi.SEC_LEVEL_TYPE.TC128)
-    keygen = sealapi.KeyGenerator(ctx) 
+    keygen = sealapi.KeyGenerator(ctx)
     pub_key = sealapi.PublicKey()
     pub_key.load(ctx, public_key)
 
     encryptor = sealapi.Encryptor(ctx, pub_key)
     batchenc = sealapi.BatchEncoder(ctx)
-    return encryptor, batchenc, ctx   
+    return encryptor, batchenc, ctx
 
 
 def main(feature_list, folder, precision, public_key):
@@ -78,21 +83,22 @@ def main(feature_list, folder, precision, public_key):
     features = load_features(feature_list)
     n, dim = len(features), len(features[0])
 
-    print('[SFM] Encrypting features...')   
+    print('[SFM] Encrypting features...')
     encryptor, batchenc, ctx = load_key(public_key)
-    
+
     start = time.time()
-    duration_sfm = []    
+    duration_sfm = []
     # r_init = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    for i, feature in enumerate(features):        
+    for i, feature in enumerate(features):
         result, duration = enroll(feature, precision, encryptor, batchenc, ctx)
-        result.save('{}/{}'.format(folder, i))        
+        result.save('{}/{}'.format(folder, i))
         # measure time
-        duration_sfm.append(duration)        
+        duration_sfm.append(duration)
         if i % 1000 == 0:
-            print('{}/{}'.format(i, n))    
+            print('{}/{}'.format(i, n))
     duration = time.time() - start
-    print('total duration {}, sfm duration {}, encrypted {} features.\n'.format(duration, sum(duration_sfm), n))
+    print('total duration {}, sfm duration {}, encrypted {} features.\n'.format(
+        duration, sum(duration_sfm), n))
 
 
 if __name__ == '__main__':
@@ -101,4 +107,3 @@ if __name__ == '__main__':
     os.makedirs(args.folder)
 
     main(args.feat_list, args.folder, args.precision, args.public_key)
-

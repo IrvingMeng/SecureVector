@@ -13,9 +13,10 @@ rng = default_rng()
 # parse the args
 parser = argparse.ArgumentParser(description='Enrollment in ASE')
 parser.add_argument('--feat_list', type=str)
-parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
+parser.add_argument('--folder', type=str,
+                    help='use to store the keys and encrypted features')
 parser.add_argument('--ase_dim', type=int, default=4)
-args = parser.parse_args() 
+args = parser.parse_args()
 
 
 def load_features(feature_list):
@@ -40,7 +41,7 @@ def gen_random_basis(n=1, dim=512):
     """
     basis = []
     for i in range(n):
-        base = rng.choice([-1,1], size=dim, replace=True)
+        base = rng.choice([-1, 1], size=dim, replace=True)
         basis.append(base)
     return basis
 
@@ -53,10 +54,10 @@ def gen_adversarial_basis(cand, d, n=1):
     """
     total_num = len(cand)
     assert total_num > n
-    
+
     rng = default_rng()
     chosen_idxes = rng.choice(total_num, size=n, replace=False)
-    
+
     return [cand[idx] - d for idx in chosen_idxes]
 
 
@@ -82,7 +83,7 @@ def ortho_proj(e, d, basis):
     relative_ = e - d
     proj_e = d
     for u in u_list:
-        proj_e = proj_e +  np.dot(relative_, u) * u    
+        proj_e = proj_e + np.dot(relative_, u) * u
     return proj_e
 
 
@@ -109,14 +110,15 @@ def generate_subspace(d, dim, ase_dim, adv_features):
     rand_dim = int(ase_dim/2)
     adv_dim = ase_dim - rand_dim
     while 1:
-        basis = gen_random_basis(n=rand_dim, dim=dim) + gen_adversarial_basis(adv_features, d, adv_dim)
+        basis = gen_random_basis(n=rand_dim, dim=dim) + \
+            gen_adversarial_basis(adv_features, d, adv_dim)
         if check_valid(basis) == 1:
             break
-    
+
     # permute translation vector
     e = gen_random_basis(1, dim=dim)
     d_1 = ortho_proj(e, d, basis)
-    
+
     # permute basis
     basis_1 = []
     for _ in range(ase_dim):
@@ -136,18 +138,21 @@ def main(feature_list, folder, ase_dim):
     n, dim = len(features), len(features[0])
     # L_list = [i for i in range(0, 2*L)]
 
-    print('[ASE] Encrypting features...')    
+    print('[ASE] Encrypting features...')
     start = time.time()
     duration_plain = []
     for i, feature in enumerate(features):
-        ase_result, duration = generate_subspace(feature, dim, ase_dim, features)
-        np.save('{}/{}.npy'.format(folder, i), np.array(ase_result, np.dtype(object)))
+        ase_result, duration = generate_subspace(
+            feature, dim, ase_dim, features)
+        np.save('{}/{}.npy'.format(folder, i),
+                np.array(ase_result, np.dtype(object)))
         # measure time
         duration_plain.append(duration)
         if i % 1000 == 0:
-            print('{}/{}'.format(i, n))    
+            print('{}/{}'.format(i, n))
     duration = time.time() - start
-    print('total duration {}, ase duration {},  encrypted {} features.\n'.format(duration, sum(duration_plain), n))
+    print('total duration {}, ase duration {},  encrypted {} features.\n'.format(
+        duration, sum(duration_plain), n))
 
 
 if __name__ == '__main__':
@@ -155,5 +160,4 @@ if __name__ == '__main__':
         shutil.rmtree(args.folder)
     os.makedirs(args.folder)
 
-    main( args.feat_list, args.folder, args.ase_dim)
-
+    main(args.feat_list, args.folder, args.ase_dim)

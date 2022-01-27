@@ -14,8 +14,10 @@ parser.add_argument('--feat_list', type=str,
 parser.add_argument('--base_dir', default='/ssd/irving/data/IJB_release/IJBC/')
 parser.add_argument('--type', default='c')
 parser.add_argument('--embedding_size', default=512, type=int)
-parser.add_argument('--template_feature', type=str,help='the template feature file')
+parser.add_argument('--template_feature', type=str,
+                    help='the template feature file')
 parser.add_argument('--pair_list', type=str, help='the pair list file')
+
 
 def read_template_media_list(path):
     ijb_meta, templates, medias = [], [], []
@@ -107,14 +109,15 @@ def gather_pair_features(args):
         template2id[uqt] = count_template
 
     with open(args.template_feature, 'w') as f:
-        for i,feat in enumerate(template_feats):
+        for i, feat in enumerate(template_feats):
             featlist = [str(b) for b in feat.tolist()]
-            f.write('{} {}\n'.format(i,' '.join(featlist)))
+            f.write('{} {}\n'.format(i, ' '.join(featlist)))
 
     with open(args.pair_list, 'w') as f:
         for i in range(len(p1)):
             issame = label[i]
-            f.write('{} {} {}\n'.format(template2id[p1[i]], template2id[p2[i]], issame))
+            f.write('{} {} {}\n'.format(
+                template2id[p1[i]], template2id[p2[i]], issame))
 
 
 def main():
