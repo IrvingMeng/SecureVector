@@ -1,17 +1,14 @@
 M=$1  
-# 0. baseline
-# 1. invisibleface
 
-METHOD_LIST=('baseline' 'invisibleface' 'ase' 'ironmask' 'sfm')
+METHOD_LIST=('baseline' 'securevector' 'ase' 'ironmask' 'sfm')
 METHOD=${METHOD_LIST[$M]}
 
-# cd ../
 
-for BM in 'lfw' 'cfp' 'agedb'
+for BM in 'lfw' #'cfp' 'agedb'
 do 
-    FEAT_LIST=/face/irving/eval_feats/magface_iresnet100/${BM}_mf_10_110_0.45_0.8_20.list
-    PAIR_LIST=/face/irving/data/ms1m_eval/${BM}/pair.list
-    BASE_FOLD=/face/irving/eval_feats/template_protection
+    FEAT_LIST=data/${BM}/${BM}_feat.list
+    PAIR_LIST=data/${BM}/pair.list
+    BASE_FOLD=results/
 
     FOLD=${BASE_FOLD}/${METHOD}/${BM}
     SCORE_LIST=${FOLD}/score.list
@@ -19,40 +16,50 @@ do
     if [[ $M == 0 ]]
     then
         # generate similarities
-        python3 baseline/gen_sim.py --feat_list ${FEAT_LIST} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
+        python3 libs/baseline/gen_sim.py --feat_list ${FEAT_LIST} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
 
     elif [[ $M == 1 ]]
     then
-        KS=1024
-        K=32
+        KS=512
+        K=64
         # enrollment
-        python3 InvisibleFace/enrollment.py --feat_list ${FEAT_LIST} --key_size ${KS} --K ${K} --folder ${FOLD}
+        if [ ! -f libs/SecureVector/keys/privatekey_{KS} ]; then
+            echo 'generate paillier keys...'
+            mkdir libs/SecureVector/keys/
+            python libs/SecureVector/crypto_system.py --genkey 1 --key_size ${KS} 
+        fi
+        python3 libs/SecureVector/enrollment.py --feat_list ${FEAT_LIST} --key_size ${KS} --K ${K} --folder ${FOLD}
         # generate similarities
-        python InvisibleFace/crypto_system.py --key_size ${KS} --K ${K} --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
+        python libs/SecureVector/crypto_system.py --key_size ${KS} --K ${K} --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
     
     elif [[ $M == 2 ]]
     then 
         ASE_DIM=4
         # enrollment
-        python3 ASE/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --ase_dim ${ASE_DIM}
+        python3 libs/ASE/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --ase_dim ${ASE_DIM}
         # generate similarities
-        python ASE/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  
+        python libs/ASE/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  
 
     elif [[ $M == 3 ]]
     then 
         ALPHA=16
         # enrollment
-        python3 IronMask/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --alpha ${ALPHA}        
+        python3 libs/IronMask/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --alpha ${ALPHA}        
         # generate similarities
-        python IronMask/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  --alpha ${ALPHA} --feat_list ${FEAT_LIST}
+        python libs/IronMask/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  --alpha ${ALPHA} --feat_list ${FEAT_LIST}
 
     elif [[ $M == 4 ]]
     then 
         PRECISION=125        
-        # enrollment
-        python3 SFM/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --precision ${PRECISION}               
+        if [ ! -f libs/SFM/keys/gal_key ]; then
+            echo 'generate SFM keys...'
+            mkdir libs/SFM/keys/
+            python libs/SFM/gen_sim.py  --genkey 1
+        fi 
+         # enrollment       
+        python3 libs/SFM/enrollment.py --feat_list ${FEAT_LIST} --folder ${FOLD} --precision ${PRECISION}
         # generate similarities
-        python SFM/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  --precision ${PRECISION}
+        python libs/SFM/gen_sim.py --folder ${FOLD} --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}  --precision ${PRECISION}
 
     else
         echo 'key error'
@@ -62,10 +69,10 @@ done
 for BM in 'lfw' 'cfp' 'agedb'
 do 
     echo [${METHOD}]: ${BM}
-    PAIR_LIST=/face/irving/data/ms1m_eval/${BM}/pair.list
+    PAIR_LIST=data/${BM}/pair.list
     FOLD=${BASE_FOLD}/${METHOD}/${BM}
     SCORE_LIST=${FOLD}/score.list
     
     # eval for lfw/cfp/agedb
-    python eval/eval_1v1.py --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}    
+    python eval/eval_1v1.py --pair_list ${PAIR_LIST} --score_list ${SCORE_LIST}
 done    

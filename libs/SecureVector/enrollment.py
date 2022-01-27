@@ -12,11 +12,11 @@ import shutil
 import resource
 
 # parse the args
-parser = argparse.ArgumentParser(description='Enrollment in InvisibleFace')
+parser = argparse.ArgumentParser(description='Enrollment in SecureVector')
 parser.add_argument('--K', default=128, type=int)
 parser.add_argument('--feat_list', type=str)
 parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
-parser.add_argument('--public_key', default='/face/irving/eval_feats/template_protection/invisibleface/publickey', type=str, help='path to the public key')
+parser.add_argument('--public_key', default='libs/SecureVector/keys/publickey', type=str, help='path to the public key')
 parser.add_argument('--key_size', default=2048, type=int)
 args = parser.parse_args() 
 
@@ -67,13 +67,13 @@ def enroll(feature, K, L, M, public_key):
 
 def main(K, L, M, feature_list, folder, public_key):
     """
-    enrollment in invisibleface
+    enrollment in SecureVector
     """
     # print('loading features...')
     features = load_features(feature_list)
     n, dim = len(features), len(features[0])
 
-    print('[InvisibleFace] Encrypting features...')    
+    print('[SecureVector] Encrypting features...')    
     publickey = np.load(public_key, allow_pickle=True)[0]  
     
     start = time.time()

@@ -43,20 +43,20 @@ if args.genkey == 1:
     relin_key = sealapi.RelinKeys()
     keygen.create_relin_keys(relin_key)
 
-    public_key.save('/face/irving/eval_feats/template_protection/sfm/public_key')
-    secret_key.save('/face/irving/eval_feats/template_protection/sfm/secret_key')
-    gal_key.save('/face/irving/eval_feats/template_protection/sfm/gal_key')
-    relin_key.save('/face/irving/eval_feats/template_protection/sfm/relin_key')
+    public_key.save('libs/SFM/keys/public_key')
+    secret_key.save('libs/SFM/keys/secret_key')
+    gal_key.save('libs/SFM/keys/gal_key')
+    relin_key.save('libs/SFM/keys/relin_key')
     exit(1)
 else:
     public_key = sealapi.PublicKey()
-    public_key.load(ctx, '/face/irving/eval_feats/template_protection/sfm/public_key')
+    public_key.load(ctx, 'libs/SFM/keys/public_key')
     secret_key = keygen.secret_key()
-    secret_key.load(ctx, '/face/irving/eval_feats/template_protection/sfm/secret_key')
+    secret_key.load(ctx, 'libs/SFM/keys/secret_key')
     gal_key = sealapi.GaloisKeys()
-    gal_key.load(ctx, '/face/irving/eval_feats/template_protection/sfm/gal_key')
+    gal_key.load(ctx, 'libs/SFM/keys/gal_key')
     relin_key = sealapi.RelinKeys()
-    relin_key.load(ctx, '/face/irving/eval_feats/template_protection/sfm/relin_key')
+    relin_key.load(ctx, 'libs/SFM/keys/relin_key')
 
 def cipher_zero(ctx, batchenc, encryptor):
     plaintext = sealapi.Plaintext()

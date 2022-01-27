@@ -1,37 +1,34 @@
-# TemplateProtection
+## SecureVector
 
-A library for plug-in template protection methods.
+A official implementation of SecureVector *Towards Privacy-Preserving, Real-Time and Lossless Feature Matching* and other plug-in template protection baselines.
+
+
+### Usage
 
 ```
 # [index] for method
     # 0. baseline
-    # 1. invisibleface
-    # 2. ase
-    # 3. ironmask
-    # 4. sfm
-    
-# eval for lfw/cfp/agedb
-cd eval/
-./eval1.sh [index] 
+    # 1. SecureVector
+    # 2. ase [1]
+    # 3. ironmask [2]
+    # 4. sfm [3]
+
+export key=1 
+
+# evaluation on LFW/CFP/AgeDB
+eval/eval1.sh $key  
+
+# evalutation on IJB
+eval/evalibjx.sh $key
 ```
 
 
-## 0. NoProtection
 
 
-## 1. InvisibleFace
-[To apper in CVPR2022] InvisibleFace: Towards Privacy-preserving, Real-time and  Accurate Template Matching
 
-## 2. ASE
-[CVPR2021 Best paper candidate] Privacy-Preserving Image Features via Adversarial Affine Subspace Embeddings
 
-## 3. IronMask
-[CVPR2021] IronMask: Modular Architecture for Protecting Deep Face Template
+[1] Dusmanu, Mihai, et al. "Privacy-preserving image features via adversarial affine subspace embeddings." *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition.* 2021.
 
-Note: can only protect gallery. Probe templates are exposed.
+[2] Kim, Sunpill, et al. "Ironmask: Modular architecture for protecting deep face template." *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition.* 2021.
 
-## FHE
-[2018] Secure Face Matching Using Fully Homomorphic Encryption
-
-[2021] HERS: Homomorphically Encrypted Representation Search
-
+[3] Boddeti, Vishnu Naresh. "Secure face matching using fully homomorphic encryption." *2018 IEEE 9th International Conference on Biometrics Theory, Applications and Systems (BTAS).* IEEE, 2018.

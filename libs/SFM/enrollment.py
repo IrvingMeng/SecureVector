@@ -15,7 +15,7 @@ import tenseal.sealapi as sealapi
 parser = argparse.ArgumentParser(description='Enrollment in SecureFaceMatching')
 parser.add_argument('--feat_list', type=str)
 parser.add_argument('--folder', type=str, help='use to store the keys and encrypted features')
-parser.add_argument('--public_key', default='/face/irving/eval_feats/template_protection/sfm/public_key', type=str, help='path to the public key')
+parser.add_argument('--public_key', default='libs/SFM/keys/public_key', type=str, help='path to the public key')
 parser.add_argument('--precision', default=125, type=int)
 args = parser.parse_args() 
 

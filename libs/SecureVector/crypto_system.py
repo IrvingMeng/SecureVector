@@ -23,7 +23,7 @@ from itertools import repeat
 from joblib import Parallel, delayed
 
 # parse the args
-parser = argparse.ArgumentParser(description='Match in InvisibleFace')
+parser = argparse.ArgumentParser(description='Match in SecureVector')
 parser.add_argument('--folder', default='', type=str, help='fold which stores the encrypted features')
 parser.add_argument('--pair_list', default='', type=str, help='pair file')
 parser.add_argument('--score_list', type=str, help='a file which stores the scores')
@@ -34,11 +34,11 @@ args = parser.parse_args()
 
 if args.genkey == 1:
     pubkey, prikey = paillier.generate_paillier_keypair(n_length=args.key_size)
-    np.save('/face/irving/eval_feats/template_protection/invisibleface/privatekey_{}.npy'.format(args.key_size), [prikey])
-    np.save('/face/irving/eval_feats/template_protection/invisibleface/publickey_{}.npy'.format(args.key_size), [pubkey])
+    np.save('libs/SecureVector/keys/privatekey_{}.npy'.format(args.key_size), [prikey])
+    np.save('libs/SecureVector/keys/publickey_{}.npy'.format(args.key_size), [pubkey])
     exit(1)
 else:
-    private_key = np.load('/face/irving/eval_feats/template_protection/invisibleface/privatekey_{}.npy'.format(args.key_size), allow_pickle=True)[0]
+    private_key = np.load('libs/SecureVector/keys/privatekey_{}.npy'.format(args.key_size), allow_pickle=True)[0]
 
 def load_enrolled_file(file):
     c_f, C_tilde_f= np.load(file, allow_pickle=True)
@@ -130,7 +130,7 @@ def main(folder, pair_list, score_list,  K, L, M):
 
     fw = open(score_list, 'w')
 
-    print('[InvisibleFace] Decrypting features...')    
+    print('[SecureVector] Decrypting features...')    
     start = time.time()
     duration_plain = []
     duration_cypher = []    
