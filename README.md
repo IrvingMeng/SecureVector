@@ -1,6 +1,6 @@
 ## SecureVector
 
-A official implementation of SecureVector *Towards Privacy-Preserving, Real-Time and Lossless Feature Matching* and other plug-in template protection baselines.
+A official implementation of SecureVector [Towards Privacy-Preserving, Real-Time and Lossless Feature Matching](https://arxiv.org/abs/2208.00214) and involved baselines of template protection.
 
 
 ### Usage
@@ -34,7 +34,7 @@ A official implementation of SecureVector *Towards Privacy-Preserving, Real-Time
 
 4. Run evaluations on the face task by:
 ```
-    # [index] for method
+    # [key] for method
         # 0. baseline
         # 1. SecureVector [1]
         # 2. ase [2]
@@ -52,7 +52,7 @@ A official implementation of SecureVector *Towards Privacy-Preserving, Real-Time
 
 
 ### References
-[1] Qiang Meng el al, "Towards Privacy-Preserving, Real-Time and Lossless Feature Matching", 2022.
+[1] Qiang Meng, el al, "Towards Privacy-Preserving, Real-Time and Lossless Feature Matching", arXiv 2022.
 
 [2] Dusmanu, Mihai, et al. "Privacy-preserving image features via adversarial affine subspace embeddings." *Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition.* 2021.
 
